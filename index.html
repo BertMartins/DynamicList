@@ -3,12 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="blue">
-    <meta name="apple-mobile-web-app-title" content="Checklist Dinâmico">
-
     <title>Checklist Dinâmico</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -214,19 +209,26 @@
                     html += `<h3 class="text-lg font-medium mt-3 mb-1 text-gray-600 dark:text-gray-400">${item.text}</h3>`;
                 } else {
                     html += `
-                    <div class="flex items-center py-1 group">
-                        <input type="checkbox" id="item-${index}" class="w-5 h-5 mr-2 rounded" ${item.checked ? 'checked' : ''} 
-                            data-index="${index}">
-                        <label for="item-${index}" class="cursor-pointer flex-grow ${item.checked ? 'line-through text-gray-500 dark:text-gray-500' : ''}">${item.text}</label>
-                        <button class="delete-btn text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
-                            data-index="${index}">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
-                    </div>`;
+        <div class="flex items-center py-1 group">
+            <input type="checkbox" id="item-${index}" class="w-5 h-5 mr-2 rounded" ${item.checked ? 'checked' : ''} 
+                data-index="${index}">
+            <label for="item-${index}" class="cursor-pointer flex-grow ${item.checked ? 'line-through text-gray-500 dark:text-gray-500' : ''}" id="label-${index}">${item.text}</label>
+            <button class="edit-btn text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity mr-2" 
+                data-index="${index}" onclick="editItem(${index})">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 4h4v4M5 12l9-9 4 4-9 9H5v-4z" />
+                </svg>
+            </button>
+            <button class="delete-btn text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity" 
+                data-index="${index}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+        </div>`;
                 }
             });
+
 
             checklistContainer.innerHTML = html;
 
@@ -242,6 +244,54 @@
                 btn.addEventListener('click', handleDeleteItem);
             });
         }
+
+        function editItem(index) {
+            // Obtém o item a ser editado
+            const item = checklistData[index];
+            const label = document.getElementById(`label-${index}`);
+
+            // Cria um campo de entrada de texto com o valor atual
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = item.text;
+            input.className = 'w-full px-2 py-1 border rounded';
+
+            // Substitui o texto do item pelo campo de entrada
+            label.innerHTML = '';
+            label.appendChild(input);
+
+            // Botão para salvar a edição
+            const saveButton = document.createElement('button');
+            saveButton.textContent = 'Salvar';
+            saveButton.className = 'ml-2 text-green-500 hover:text-green-700';
+            saveButton.onclick = function () {
+                // Atualiza o texto do item com o valor do campo de entrada
+                item.text = input.value;
+                label.innerHTML = item.text;
+                label.appendChild(editButton);
+            };
+
+            // Botão para cancelar a edição
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = 'Cancelar';
+            cancelButton.className = 'ml-2 text-red-500 hover:text-red-700';
+            cancelButton.onclick = function () {
+                label.innerHTML = item.text;
+                label.appendChild(editButton);
+            };
+
+            label.appendChild(saveButton);
+            label.appendChild(cancelButton);
+
+            // Atualiza o botão de editar
+            const editButton = document.createElement('button');
+            editButton.textContent = 'Editar';
+            editButton.className = 'edit-btn text-blue-500 hover:text-blue-700';
+            editButton.onclick = function () {
+                editItem(index);
+            };
+        }
+
 
         function handleAddItem(e) {
             e.preventDefault();
@@ -332,7 +382,6 @@
             renderChecklist();
         }
 
-      
         function generateExportText() {
             let text = '';
 
