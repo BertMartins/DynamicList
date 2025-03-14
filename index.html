@@ -332,37 +332,20 @@
             renderChecklist();
         }
 
+      
         function generateExportText() {
             let text = '';
-            const categories = new Set();
-            const subCategories = new Set();
 
-            // Primeiro, coletamos todas as categorias e subcategorias
+            // Percorre os itens em checklistData na ordem original
             checklistData.forEach(item => {
                 if (item.type === 'category') {
-                    categories.add(item.text);
+                    // Adiciona a categoria
+                    text += `# ${item.text}\n`;
                 } else if (item.type === 'subCategory') {
-                    subCategories.add(item.text);
-                }
-            });
-
-            // Adicionamos categorias
-            categories.forEach(category => {
-                text += `# ${category}\n`;
-            });
-
-            if (categories.size > 0) text += '\n';
-
-            // Adicionamos subcategorias
-            subCategories.forEach(subCategory => {
-                text += `- ${subCategory}\n`;
-            });
-
-            if (subCategories.size > 0) text += '\n';
-
-            // Adicionamos itens
-            checklistData.forEach(item => {
-                if (item.type === 'item') {
+                    // Adiciona a subcategoria
+                    text += `- ${item.text}\n`;
+                } else if (item.type === 'item') {
+                    // Adiciona o item
                     text += item.checked ? `- [x] ${item.text}\n` : `- [] ${item.text}\n`;
                 }
             });
