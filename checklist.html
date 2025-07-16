@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="pt" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="blue">
+    <meta name="apple-mobile-web-app-title" content="Checklist Dinâmico">
+    <title>Checklist Dinâmico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 h-full transition-colors duration-200">
+    <div class="container max-w-3xl mx-auto px-4 py-6">
+        <!-- Header com navegação -->
+        <div class="flex items-center justify-between mb-6">
+            <button id="backToHomeBtn"
+                class="flex items-center text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Voltar
+            </button>
+            <h1 id="currentChecklistTitle" class="text-3xl font-bold text-center text-primary flex-grow"></h1>
+            <div class="w-16"></div> <!-- Spacer para centralizar o título -->
+        </div>
+
+        <!-- Instruções de Uso -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+            <div class="flex items-start">
+                <svg class="w-5 h-5 text-blue-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clip-rule="evenodd"></path>
+                </svg>
+                <div class="flex-1">
+                    <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">Como usar o formato de
+                        importação:</h3>
+                    <div class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                        <p><strong># Título</strong> - Para categorias principais</p>
+                        <p><strong>- Subtítulo</strong> - Para subcategorias</p>
+                        <p><strong>- [] Item</strong> - Para itens não marcados</p>
+                        <p><strong>- [x] Item</strong> - Para itens já marcados</p>
+                    </div>
+                    <button id="showExampleBtn"
+                        class="mt-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 underline">
+                        Ver exemplo completo
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards de Ação -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <!-- Importar -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <h2 class="text-lg font-semibold mb-2 text-primary">Importar Lista</h2>
+                <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">Arquivo .txt com formato especificado acima</p>
+                <div class="flex items-center">
+                    <label class="block w-full">
+                        <input type="file" id="importFile" accept=".txt" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 
+                            file:rounded-full file:border-0 file:text-sm file:font-semibold
+                            file:bg-primary file:text-white hover:file:bg-primary/80
+                            cursor-pointer">
+                    </label>
+                </div>
+                <div id="importFeedback" class="mt-2 text-sm hidden"></div>
+            </div>
+
+            <!-- Adicionar Novo Item -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <h2 class="text-lg font-semibold mb-2 text-primary">Adicionar Item</h2>
+                <form id="addItemForm" class="flex flex-col space-y-2">
+                    <select id="itemType"
+                        class="w-full px-3 py-2 rounded border dark:bg-gray-700 dark:border-gray-600 text-base">
+                        <option value="category">Título</option>
+                        <option value="subCategory">SubTítulo</option>
+                        <option value="item">Item de Checklist</option>
+                    </select>
+                    <input type="text" id="itemText" placeholder="Digite o texto aqui..."
+                        class="w-full px-3 py-2 rounded border dark:bg-gray-700 dark:border-gray-600 text-base">
+                    <button type="submit"
+                        class="py-2 px-4 bg-primary text-white rounded hover:bg-primary/80 transition-colors">
+                        Adicionar
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Ações da Lista -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+            <div class="flex flex-wrap gap-2 justify-evenly">
+                <button id="checkSelectedBtn"
+                    class="py-2 px-4 bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
+                    Ver Selecionados
+                </button>
+                <button id="exportBtn"
+                    class="py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                    Exportar Lista
+                </button>
+                <button id="clearBtn"
+                    class="py-2 px-4 bg-red-500 text-white rounded hover:bg-red-600 transition-colors">
+                    Limpar Lista
+                </button>
+            </div>
+        </div>
+
+        <!-- Contador de Progresso -->
+        <div id="progressBar" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-4 hidden">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-medium">Progresso</span>
+                <span id="progressText" class="text-sm text-gray-600 dark:text-gray-400">0/0</span>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div id="progressFill" class="bg-primary h-2 rounded-full transition-all duration-300"
+                    style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800">
+            <div class="flex flex-wrap gap-2 justify-end p-2">
+                <button id="checkAllBtn"
+                    class="py-2 px-4 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors">
+                    Marcar Todos
+                </button>
+                <button id="uncheckAllBtn"
+                    class="py-2 px-4 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">
+                    Desmarcar Todos
+                </button>
+            </div>
+
+            <!-- Conteúdo do Checklist -->
+            <div id="checklist" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 min-h-[200px]">
+                <p id="emptyMessage" class="text-center text-gray-500 dark:text-gray-400 py-8">
+                    Nenhum item na lista. Importe um arquivo ou adicione itens manualmente.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de exemplo -->
+    <div id="exampleModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-2xl w-full mx-4">
+            <h2 class="text-xl font-bold mb-4 text-primary">Exemplo de Formato de Importação</h2>
+            <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                Copie e cole o exemplo abaixo em um arquivo .txt para testar:
+            </p>
+            <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg mb-4 font-mono text-sm">
+                <pre id="exampleContent"># Preparação para Viagem
+- Documentos
+- [] Passaporte
+- [] Carteira de identidade
+- [x] Passagem aérea
+
+- Bagagem
+- [] Roupas para 5 dias
+- [] Produtos de higiene
+- [] Carregador do celular
+
+# Trabalho
+- [] Finalizar relatório mensal
+- [] Revisar apresentação
+- [x] Enviar email para cliente</pre>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button id="copyExampleBtn" class="py-2 px-4 bg-green-500 text-white rounded hover:bg-green-600">
+                    Copiar Exemplo
+                </button>
+                <button id="closeExampleBtn" class="py-2 px-4 bg-gray-500 text-white rounded hover:bg-gray-600">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de exportação -->
+    <div id="exportModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-3xl w-full mx-4">
+            <h2 class="text-xl font-bold mb-4 text-primary">Exportar Lista</h2>
+            <p class="mb-2">Copie o conteúdo abaixo e salve em um arquivo de texto:</p>
+            <textarea id="exportContent" rows="10"
+                class="w-full p-2 mb-4 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
+                readonly></textarea>
+            <div class="flex justify-end space-x-2">
+                <button id="copyBtn" class="py-2 px-4 bg-green-500 text-white rounded hover:bg-green-600">
+                    Copiar
+                </button>
+                <button id="closeExportBtn" class="py-2 px-4 bg-gray-500 text-white rounded hover:bg-gray-600">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmação -->
+    <div id="confirmModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <h2 class="text-xl font-bold mb-4 text-primary">Confirmação</h2>
+            <p id="confirmMessage" class="mb-4"></p>
+            <div class="flex justify-end space-x-2">
+                <button id="confirmYesBtn" class="py-2 px-4 bg-red-500 text-white rounded hover:bg-red-600">
+                    Sim
+                </button>
+                <button id="confirmNoBtn" class="py-2 px-4 bg-gray-500 text-white rounded hover:bg-gray-600">
+                    Não
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de itens selecionados -->
+    <div id="selectedItemsModal"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <h2 class="text-xl font-bold mb-4 text-primary">Itens Selecionados</h2>
+            <ul id="selectedItemsList" class="mb-4 max-h-96 overflow-y-auto"></ul>
+            <div class="flex justify-end">
+                <button id="closeSelectedBtn" class="py-2 px-4 bg-gray-500 text-white rounded hover:bg-gray-600">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Detecção de modo escuro
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // Obter ID do checklist da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const checklistId = urlParams.get('id');
+
+        // Elementos DOM
+        const checklistContainer = document.getElementById('checklist');
+        const emptyMessage = document.getElementById('emptyMessage');
+        const importFileInput = document.getElementById('importFile');
+        const addItemForm = document.getElementById('addItemForm');
+        const itemTypeSelect = document.getElementById('itemType');
+        const itemTextInput = document.getElementById('itemText');
+        const importFeedback = document.getElementById('importFeedback');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const progressFill = document.getElementById('progressFill');
+
+        // Variáveis de estado
+        let allChecklists = JSON.parse(localStorage.getItem('allChecklists')) || {};
+        let currentChecklistData = [];
+        let pendingAction = null;
+
+        // Event Listeners
+        document.getElementById('backToHomeBtn').addEventListener('click', () => window.location.href = 'index.html');
+        document.getElementById('exportBtn').addEventListener('click', showExportModal);
+        document.getElementById('clearBtn').addEventListener('click', confirmClearList);
+        document.getElementById('checkSelectedBtn').addEventListener('click', showSelectedItems);
+        document.getElementById('checkAllBtn').addEventListener('click', () => toggleAll(true));
+        document.getElementById('uncheckAllBtn').addEventListener('click', () => toggleAll(false));
+        document.getElementById('closeExportBtn').addEventListener('click', hideExportModal);
+        document.getElementById('confirmYesBtn').addEventListener('click', executeConfirmed);
+        document.getElementById('confirmNoBtn').addEventListener('click', hideConfirmModal);
+        document.getElementById('closeSelectedBtn').addEventListener('click', hideSelectedItemsModal);
+        document.getElementById('copyBtn').addEventListener('click', copyExportContent);
+        document.getElementById('showExampleBtn').addEventListener('click', showExampleModal);
+        document.getElementById('closeExampleBtn').addEventListener('click', hideExampleModal);
+        document.getElementById('copyExampleBtn').addEventListener('click', copyExample);
+        importFileInput.addEventListener('change', importList);
+        addItemForm.addEventListener('submit', handleAddItem);
+
+        // Funções de inicialização
+        function initChecklist() {
+            if (!checklistId || !allChecklists[checklistId]) {
+                // Checklist não encontrado, redirecionar para home
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const checklist = allChecklists[checklistId];
+            document.getElementById('currentChecklistTitle').textContent = checklist.name;
+            document.title = `${checklist.name} - Checklist Dinâmico`;
+
+            currentChecklistData = checklist.items || [];
+            renderChecklist();
+            updateProgress();
+        }
+
+        function saveCurrentChecklist() {
+            if (checklistId && allChecklists[checklistId]) {
+                allChecklists[checklistId].items = currentChecklistData;
+                localStorage.setItem('allChecklists', JSON.stringify(allChecklists));
+            }
+        }
+
+        // Funções de feedback
+        function showImportFeedback(message, isSuccess = true) {
+            importFeedback.textContent = message;
+            importFeedback.className = `mt-2 text-sm ${isSuccess ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`;
+            importFeedback.classList.remove('hidden');
+
+            setTimeout(() => {
+                importFeedback.classList.add('hidden');
+            }, 3000);
+        }
+
+        function updateProgress() {
+            const items = currentChecklistData.filter(item => item.type === 'item');
+            const checkedItems = items.filter(item => item.checked);
+
+            if (items.length === 0) {
+                progressBar.classList.add('hidden');
+                return;
+            }
+
+            progressBar.classList.remove('hidden');
+            const percentage = (checkedItems.length / items.length) * 100;
+            progressText.textContent = `${checkedItems.length}/${items.length}`;
+            progressFill.style.width = `${percentage}%`;
+        }
+
+        // Modal de exemplo
+        function showExampleModal() {
+            document.getElementById('exampleModal').classList.remove('hidden');
+        }
+
+        function hideExampleModal() {
+            document.getElementById('exampleModal').classList.add('hidden');
+        }
+
+        function copyExample() {
+            const exampleText = document.getElementById('exampleContent').textContent;
+            navigator.clipboard.writeText(exampleText).then(() => {
+                const btn = document.getElementById('copyExampleBtn');
+                const originalText = btn.textContent;
+                btn.textContent = 'Copiado!';
+                btn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                btn.classList.add('bg-green-700');
+
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.classList.add('bg-green-500', 'hover:bg-green-600');
+                    btn.classList.remove('bg-green-700');
+                }, 1500);
+            });
+        }
+
+        // Funções de manipulação do checklist
+        function renderChecklist() {
+            if (currentChecklistData.length === 0) {
+                emptyMessage.classList.remove('hidden');
+                checklistContainer.innerHTML = '';
+                checklistContainer.appendChild(emptyMessage);
+                return;
+            }
+
+            emptyMessage.classList.add('hidden');
+            let html = '';
+
+            currentChecklistData.forEach((item, index) => {
+                if (item.type === 'category') {
+                    html += `<h2 class="text-xl font-semibold mt-4 mb-2 pb-1 border-b-2 border-primary">${item.text}</h2>`;
+                } else if (item.type === 'subCategory') {
+                    html += `<h3 class="text-lg font-medium mt-3 mb-1 text-gray-600 dark:text-gray-400">${item.text}</h3>`;
+                } else {
+                    html += `
+        <div class="flex items-start py-1 group">
+            <input type="checkbox" id="item-${index}" class="w-5 h-5 mr-3 mt-0.5 rounded flex-shrink-0" ${item.checked ? 'checked' : ''} 
+                data-index="${index}">
+            <label for="item-${index}" class="cursor-pointer flex-grow leading-relaxed ${item.checked ? 'line-through text-gray-500 dark:text-gray-500' : ''}" id="label-${index}">${item.text}</label>
+            <div class="flex items-start ml-2 flex-shrink-0">
+                <button class="edit-btn text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity mr-2 mt-0.5" 
+                    data-index="${index}" onclick="editItem(${index})">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 4h4v4M5 12l9-9 4 4-9 9H5v-4z" />
+                    </svg>
+                </button>
+                <button class="delete-btn text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" 
+                    data-index="${index}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>`;
+                }
+            });
+
+            checklistContainer.innerHTML = html;
+
+            // Adicionar event listeners aos elementos gerados
+            document.querySelectorAll('#checklist input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', handleCheckboxChange);
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', handleDeleteItem);
+            });
+
+            updateProgress();
+            saveCurrentChecklist();
+        }
+
+        function editItem(index) {
+            const item = currentChecklistData[index];
+            const label = document.getElementById(`label-${index}`);
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = item.text;
+            input.className = 'w-full px-2 py-1 border rounded text-base';
+
+            const saveEdit = () => {
+                if (input.value.trim()) {
+                    item.text = input.value.trim();
+                    renderChecklist();
+                }
+            };
+
+            const cancelEdit = () => {
+                renderChecklist();
+            };
+
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') saveEdit();
+                if (e.key === 'Escape') cancelEdit();
+            });
+
+            input.addEventListener('blur', saveEdit);
+
+            label.innerHTML = '';
+            label.appendChild(input);
+            input.focus();
+            input.select();
+        }
+
+        function handleAddItem(e) {
+            e.preventDefault();
+            const type = itemTypeSelect.value;
+            const text = itemTextInput.value.trim();
+
+            if (!text) {
+                itemTextInput.focus();
+                return;
+            }
+
+            const newItem = {
+                type: type,
+                text: text,
+                checked: false
+            };
+
+            currentChecklistData.push(newItem);
+            renderChecklist();
+            itemTextInput.value = '';
+            itemTextInput.focus();
+        }
+
+        function handleCheckboxChange(e) {
+            const index = parseInt(e.target.dataset.index);
+            currentChecklistData[index].checked = e.target.checked;
+            renderChecklist();
+        }
+
+        function handleDeleteItem(e) {
+            const index = parseInt(e.target.closest('.delete-btn').dataset.index);
+            currentChecklistData.splice(index, 1);
+            renderChecklist();
+        }
+
+        function toggleAll(checked) {
+            currentChecklistData.forEach(item => {
+                if (item.type === 'item') {
+                    item.checked = checked;
+                }
+            });
+            renderChecklist();
+        }
+
+        // Funções de importação/exportação
+        function importList(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.type !== 'text/plain') {
+                showImportFeedback('Por favor, selecione um arquivo .txt', false);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    parseChecklist(e.target.result);
+                    showImportFeedback('Lista importada com sucesso!', true);
+                } catch (error) {
+                    showImportFeedback('Erro ao importar arquivo', false);
+                }
+                importFileInput.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function parseChecklist(text) {
+            const lines = text.split('\n');
+            let newChecklistData = [];
+
+            lines.forEach(line => {
+                line = line.trim();
+                if (!line) return;
+
+                if (line.startsWith('#')) {
+                    newChecklistData.push({
+                        type: 'category',
+                        text: line.substring(1).trim()
+                    });
+                } else if (line.startsWith('- []')) {
+                    newChecklistData.push({
+                        type: 'item',
+                        text: line.substring(4).trim(),
+                        checked: false
+                    });
+                } else if (line.startsWith('- [x]')) {
+                    newChecklistData.push({
+                        type: 'item',
+                        text: line.substring(5).trim(),
+                        checked: true
+                    });
+                } else if (line.startsWith('-')) {
+                    newChecklistData.push({
+                        type: 'subCategory',
+                        text: line.substring(1).trim()
+                    });
+                }
+            });
+
+            currentChecklistData = newChecklistData;
+            renderChecklist();
+        }
+
+        function generateExportText() {
+            let text = '';
+
+            currentChecklistData.forEach(item => {
+                if (item.type === 'category') {
+                    text += `# ${item.text}\n`;
+                } else if (item.type === 'subCategory') {
+                    text += `- ${item.text}\n`;
+                } else if (item.type === 'item') {
+                    text += item.checked ? `- [x] ${item.text}\n` : `- [] ${item.text}\n`;
+                }
+            });
+
+            return text;
+        }
+
+        function showExportModal() {
+            const exportContent = document.getElementById('exportContent');
+            exportContent.value = generateExportText();
+            document.getElementById('exportModal').classList.remove('hidden');
+        }
+
+        function hideExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+        }
+
+        function copyExportContent() {
+            const exportContent = document.getElementById('exportContent');
+            exportContent.select();
+            navigator.clipboard.writeText(exportContent.value).then(() => {
+                const copyBtn = document.getElementById('copyBtn');
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = 'Copiado!';
+                copyBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                copyBtn.classList.add('bg-green-700');
+
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+                    copyBtn.classList.remove('bg-green-700');
+                }, 1500);
+            });
+        }
+
+        // Modais de confirmação e visualização
+        function confirmClearList() {
+            pendingAction = clearList;
+            document.getElementById('confirmMessage').textContent = 'Tem certeza que deseja limpar a lista?';
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function executeConfirmed() {
+            if (pendingAction) {
+                pendingAction();
+                pendingAction = null;
+            }
+            hideConfirmModal();
+        }
+
+        function hideConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+        }
+
+        function clearList() {
+            currentChecklistData = [];
+            renderChecklist();
+        }
+
+        function showSelectedItems() {
+            const selectedList = document.getElementById('selectedItemsList');
+            selectedList.innerHTML = '';
+
+            const selectedItems = currentChecklistData.filter(item => item.type === 'item' && item.checked);
+
+            if (selectedItems.length === 0) {
+                selectedList.innerHTML = '<li class="text-gray-500 dark:text-gray-400 py-2">Nenhum item selecionado.</li>';
+            } else {
+                selectedItems.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'py-1 border-b border-gray-200 dark:border-gray-600 last:border-b-0';
+                    li.textContent = item.text;
+                    selectedList.appendChild(li);
+                });
+            }
+
+            document.getElementById('selectedItemsModal').classList.remove('hidden');
+        }
+
+        function hideSelectedItemsModal() {
+            document.getElementById('selectedItemsModal').classList.add('hidden');
+        }
+
+        initChecklist();
+    </script>
+</body>
+
+</html>
