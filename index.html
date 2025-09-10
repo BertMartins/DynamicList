@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt" class="h-full">
+<html lang="pt-BR" class="h-full">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="blue">
     <meta name="apple-mobile-web-app-title" content="Checklist Dinâmico">
@@ -13,13 +12,7 @@
     <script>
         tailwind.config = {
             darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#5D5CDE',
-                    }
-                }
-            }
+            theme: { extend: { colors: { primary: '#5D5CDE' } } }
         }
     </script>
 </head>
@@ -94,36 +87,32 @@
     </div>
 
     <script>
-        // Detecção de modo escuro
+        // Dark mode
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
             document.documentElement.classList.add('dark');
         }
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-            if (event.matches) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (e.matches) document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
         });
 
-        // Variáveis de estado
         let allChecklists = JSON.parse(localStorage.getItem('allChecklists')) || {};
         let editingChecklistId = null;
         let pendingAction = null;
 
-        // Event Listeners
+        // Event listeners
         document.getElementById('createNewBtn').addEventListener('click', () => showNameModal('create'));
         document.getElementById('nameForm').addEventListener('submit', handleNameSubmit);
         document.getElementById('cancelNameBtn').addEventListener('click', hideNameModal);
         document.getElementById('confirmYesBtn').addEventListener('click', executeConfirmed);
         document.getElementById('confirmNoBtn').addEventListener('click', hideConfirmModal);
 
-        // Funções de gerenciamento de checklists
+        // Render
         function renderChecklistsList() {
             const checklistsList = document.getElementById('checklistsList');
             const emptyChecklists = document.getElementById('emptyChecklists');
-
-            const checklistIds = Object.keys(allChecklists);
+            const checklistIds = Object.keys(allChecklists)
+                .sort((a, b) => Number(b) - Number(a)); // ordem decrescente
 
             if (checklistIds.length === 0) {
                 emptyChecklists.classList.remove('hidden');
@@ -137,10 +126,9 @@
             let html = '';
             checklistIds.forEach(id => {
                 const checklist = allChecklists[id];
-                const itemCount = checklist.items?.filter(item => item.type === 'item').length || 0;
-                const checkedCount = checklist.items?.filter(item => item.type === 'item' && item.checked).length || 0;
+                const itemCount = checklist.items?.filter(i => i.type === 'item').length || 0;
+                const checkedCount = checklist.items?.filter(i => i.type === 'item' && i.checked).length || 0;
                 const progress = itemCount > 0 ? Math.round((checkedCount / itemCount) * 100) : 0;
-
                 const createdDate = new Date(checklist.createdAt).toLocaleDateString('pt-BR');
 
                 html += `
@@ -176,90 +164,49 @@
             checklistsList.innerHTML = html;
         }
 
-        function openChecklist(id) {
-            window.location.href = `checklist.html?id=${id}`;
-        }
-
-        function editChecklistName(id) {
-            editingChecklistId = id;
-            showNameModal('edit', allChecklists[id].name);
-        }
-
+        function openChecklist(id) { window.location.href = `checklist.html?id=${id}`; }
+        function editChecklistName(id) { editingChecklistId = id; showNameModal('edit', allChecklists[id].name); }
         function confirmDeleteChecklist(id) {
             pendingAction = () => deleteChecklist(id);
             document.getElementById('confirmMessage').textContent = `Tem certeza que deseja deletar o checklist "${allChecklists[id].name}"?`;
             document.getElementById('confirmModal').classList.remove('hidden');
         }
+        function deleteChecklist(id) { delete allChecklists[id]; saveAllChecklists(); renderChecklistsList(); }
 
-        function deleteChecklist(id) {
-            delete allChecklists[id];
-            saveAllChecklists();
-            renderChecklistsList();
-        }
-
-        // Funções do modal de nome
         function showNameModal(mode, currentName = '') {
             const modal = document.getElementById('nameModal');
             const title = document.getElementById('nameModalTitle');
             const input = document.getElementById('checklistNameInput');
-
             title.textContent = mode === 'create' ? 'Novo Checklist' : 'Editar Nome';
             input.value = currentName;
-
             modal.classList.remove('hidden');
             input.focus();
             input.select();
         }
 
-        function hideNameModal() {
-            document.getElementById('nameModal').classList.add('hidden');
-            editingChecklistId = null;
-        }
+        function hideNameModal() { document.getElementById('nameModal').classList.add('hidden'); editingChecklistId = null; }
 
         function handleNameSubmit(e) {
             e.preventDefault();
             const name = document.getElementById('checklistNameInput').value.trim();
-
             if (!name) return;
-
             if (editingChecklistId) {
-                // Editando nome existente
                 allChecklists[editingChecklistId].name = name;
                 saveAllChecklists();
                 renderChecklistsList();
             } else {
-                // Criando novo checklist
                 const id = Date.now().toString();
-                allChecklists[id] = {
-                    name: name,
-                    items: [],
-                    createdAt: new Date().toISOString()
-                };
+                allChecklists[id] = { name: name, items: [], createdAt: new Date().toISOString() };
                 saveAllChecklists();
                 window.location.href = `checklist.html?id=${id}`;
             }
-
             hideNameModal();
         }
 
-        // Modais de confirmação
-        function executeConfirmed() {
-            if (pendingAction) {
-                pendingAction();
-                pendingAction = null;
-                hideConfirmModal();
-            }
-        }
+        function executeConfirmed() { if (pendingAction) { pendingAction(); pendingAction = null; location.reload(); } }
+        function hideConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); }
+        function saveAllChecklists() { localStorage.setItem('allChecklists', JSON.stringify(allChecklists)); }
 
-        function hideConfirmModal() {
-            location.reload();
-        }
-
-        function saveAllChecklists() {
-            localStorage.setItem('allChecklists', JSON.stringify(allChecklists));
-        }
-
-        // Migração de dados antigos
         function migrateOldData() {
             const oldData = localStorage.getItem('checklistData');
             if (oldData && Object.keys(allChecklists).length === 0) {
@@ -267,27 +214,15 @@
                     const parsedData = JSON.parse(oldData);
                     if (Array.isArray(parsedData) && parsedData.length > 0) {
                         const id = Date.now().toString();
-                        allChecklists[id] = {
-                            name: 'Checklist Importado',
-                            items: parsedData,
-                            createdAt: new Date().toISOString()
-                        };
+                        allChecklists[id] = { name: 'Checklist Importado', items: parsedData, createdAt: new Date().toISOString() };
                         saveAllChecklists();
                         localStorage.removeItem('checklistData');
                     }
-                } catch (error) {
-                    console.log('Erro ao migrar dados antigos:', error);
-                }
+                } catch (err) { console.log('Erro ao migrar dados antigos:', err); }
             }
         }
 
-        // Inicialização
-        function init() {
-            migrateOldData();
-            renderChecklistsList();
-        }
-
-        // Iniciar aplicação
+        function init() { migrateOldData(); renderChecklistsList(); }
         init();
     </script>
 </body>
