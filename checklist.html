@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt" class="h-full">
+<html lang="pt-BR" class="h-full">
 
 <head>
     <meta charset="UTF-8">
@@ -36,7 +36,7 @@
                 Voltar
             </button>
             <h1 id="currentChecklistTitle" class="text-3xl font-bold text-center text-primary flex-grow"></h1>
-            <div class="w-16"></div> <!-- Spacer para centralizar o título -->
+            <div class="w-16"></div>
         </div>
 
         <!-- Instruções de Uso -->
@@ -291,7 +291,6 @@
         // Funções de inicialização
         function initChecklist() {
             if (!checklistId || !allChecklists[checklistId]) {
-                // Checklist não encontrado, redirecionar para home
                 window.location.href = 'index.html';
                 return;
             }
@@ -302,6 +301,7 @@
 
             currentChecklistData = checklist.items || [];
             renderChecklist();
+            enableDragDrop();
             updateProgress();
         }
 
@@ -312,7 +312,6 @@
             }
         }
 
-        // Funções de feedback
         function showImportFeedback(message, isSuccess = true) {
             importFeedback.textContent = message;
             importFeedback.className = `mt-2 text-sm ${isSuccess ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`;
@@ -338,15 +337,9 @@
             progressFill.style.width = `${percentage}%`;
         }
 
-        // Modal de exemplo
-        function showExampleModal() {
-            document.getElementById('exampleModal').classList.remove('hidden');
-        }
-
-        function hideExampleModal() {
-            document.getElementById('exampleModal').classList.add('hidden');
-        }
-
+        // Modais de exemplo
+        function showExampleModal() { document.getElementById('exampleModal').classList.remove('hidden'); }
+        function hideExampleModal() { document.getElementById('exampleModal').classList.add('hidden'); }
         function copyExample() {
             const exampleText = document.getElementById('exampleContent').textContent;
             navigator.clipboard.writeText(exampleText).then(() => {
@@ -355,7 +348,6 @@
                 btn.textContent = 'Copiado!';
                 btn.classList.remove('bg-green-500', 'hover:bg-green-600');
                 btn.classList.add('bg-green-700');
-
                 setTimeout(() => {
                     btn.textContent = originalText;
                     btn.classList.add('bg-green-500', 'hover:bg-green-600');
@@ -364,7 +356,7 @@
             });
         }
 
-        // Funções de manipulação do checklist
+        // Renderização do checklist
         function renderChecklist() {
             if (currentChecklistData.length === 0) {
                 emptyMessage.classList.remove('hidden');
@@ -374,81 +366,69 @@
             }
 
             emptyMessage.classList.add('hidden');
-            let html = '';
+            checklistContainer.innerHTML = '';
 
             currentChecklistData.forEach((item, index) => {
+                let element;
+
                 if (item.type === 'category') {
-                    html += `<h2 class="text-xl font-semibold mt-4 mb-2 pb-1 border-b-2 border-primary">${item.text}</h2>`;
+                    element = document.createElement('h2');
+                    element.className = 'text-xl font-semibold mt-4 mb-2 pb-1 border-b-2 border-primary cursor-pointer';
+                    element.textContent = item.text;
+                    element.addEventListener('dblclick', () => editText(item, element));
                 } else if (item.type === 'subCategory') {
-                    html += `<h3 class="text-lg font-medium mt-3 mb-1 text-gray-600 dark:text-gray-400">${item.text}</h3>`;
+                    element = document.createElement('h3');
+                    element.className = 'text-lg font-medium mt-3 mb-1 text-gray-600 dark:text-gray-400 cursor-pointer';
+                    element.textContent = item.text;
+                    element.addEventListener('dblclick', () => editText(item, element));
                 } else {
-                    html += `
-        <div class="flex items-start py-1 group">
-            <input type="checkbox" id="item-${index}" class="w-5 h-5 mr-3 mt-0.5 rounded flex-shrink-0" ${item.checked ? 'checked' : ''} 
-                data-index="${index}">
-            <label for="item-${index}" class="cursor-pointer flex-grow leading-relaxed ${item.checked ? 'line-through text-gray-500 dark:text-gray-500' : ''}" id="label-${index}">${item.text}</label>
-            <div class="flex items-start ml-2 flex-shrink-0">
-                <button class="edit-btn text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity mr-2 mt-0.5" 
-                    data-index="${index}" onclick="editItem(${index})">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 4h4v4M5 12l9-9 4 4-9 9H5v-4z" />
-                    </svg>
-                </button>
-                <button class="delete-btn text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" 
-                    data-index="${index}">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                </button>
-            </div>
-        </div>`;
+                    element = document.createElement('div');
+                    element.className = 'flex items-start py-1 group';
+                    element.innerHTML = `
+                    <input type="checkbox" class="w-5 h-5 mr-3 mt-0.5 rounded flex-shrink-0" ${item.checked ? 'checked' : ''} data-index="${index}">
+                    <label class="cursor-pointer flex-grow leading-relaxed ${item.checked ? 'line-through text-gray-500 dark:text-gray-500' : ''}" data-index="${index}">${item.text}</label>
+                    <div class="flex items-start ml-2 flex-shrink-0">
+                        <button class="edit-btn text-blue-500 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity mr-2 mt-0.5" data-index="${index}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 4h4v4M5 12l9-9 4 4-9 9H5v-4z"/>
+                            </svg>
+                        </button>
+                        <button class="delete-btn text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" data-index="${index}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                    const checkbox = element.querySelector('input[type="checkbox"]');
+                    const label = element.querySelector('label');
+                    checkbox.addEventListener('change', () => { item.checked = checkbox.checked; updateProgress(); saveCurrentChecklist(); renderChecklist(); });
+                    label.addEventListener('dblclick', () => editText(item, label));
+                    element.querySelector('.edit-btn').addEventListener('click', () => editText(item, label));
+                    element.querySelector('.delete-btn').addEventListener('click', () => { currentChecklistData.splice(index, 1); renderChecklist(); });
                 }
+
+                checklistContainer.appendChild(element);
             });
 
-            checklistContainer.innerHTML = html;
-
-            // Adicionar event listeners aos elementos gerados
-            document.querySelectorAll('#checklist input[type="checkbox"]').forEach(checkbox => {
-                checkbox.addEventListener('change', handleCheckboxChange);
-            });
-
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', handleDeleteItem);
-            });
-
-            updateProgress();
             saveCurrentChecklist();
+            updateProgress();
         }
 
-        function editItem(index) {
-            const item = currentChecklistData[index];
-            const label = document.getElementById(`label-${index}`);
-
+        function editText(item, element) {
             const input = document.createElement('input');
             input.type = 'text';
             input.value = item.text;
             input.className = 'w-full px-2 py-1 border rounded text-base';
 
-            const saveEdit = () => {
-                if (input.value.trim()) {
-                    item.text = input.value.trim();
-                    renderChecklist();
-                }
-            };
-
-            const cancelEdit = () => {
-                renderChecklist();
-            };
-
+            input.addEventListener('blur', () => { item.text = input.value.trim() || item.text; renderChecklist(); });
             input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') saveEdit();
-                if (e.key === 'Escape') cancelEdit();
+                if (e.key === 'Enter') { item.text = input.value.trim() || item.text; renderChecklist(); }
+                if (e.key === 'Escape') renderChecklist();
             });
 
-            input.addEventListener('blur', saveEdit);
-
-            label.innerHTML = '';
-            label.appendChild(input);
+            element.innerHTML = '';
+            element.appendChild(input);
             input.focus();
             input.select();
         }
@@ -457,63 +437,27 @@
             e.preventDefault();
             const type = itemTypeSelect.value;
             const text = itemTextInput.value.trim();
+            if (!text) return itemTextInput.focus();
 
-            if (!text) {
-                itemTextInput.focus();
-                return;
-            }
-
-            const newItem = {
-                type: type,
-                text: text,
-                checked: false
-            };
-
-            currentChecklistData.push(newItem);
-            renderChecklist();
+            currentChecklistData.push({ type, text, checked: false });
             itemTextInput.value = '';
-            itemTextInput.focus();
-        }
-
-        function handleCheckboxChange(e) {
-            const index = parseInt(e.target.dataset.index);
-            currentChecklistData[index].checked = e.target.checked;
-            renderChecklist();
-        }
-
-        function handleDeleteItem(e) {
-            const index = parseInt(e.target.closest('.delete-btn').dataset.index);
-            currentChecklistData.splice(index, 1);
             renderChecklist();
         }
 
         function toggleAll(checked) {
-            currentChecklistData.forEach(item => {
-                if (item.type === 'item') {
-                    item.checked = checked;
-                }
-            });
+            currentChecklistData.forEach(item => { if (item.type === 'item') item.checked = checked; });
             renderChecklist();
         }
 
-        // Funções de importação/exportação
         function importList(event) {
             const file = event.target.files[0];
             if (!file) return;
-
-            if (file.type !== 'text/plain') {
-                showImportFeedback('Por favor, selecione um arquivo .txt', false);
-                return;
-            }
+            if (file.type !== 'text/plain') return showImportFeedback('Por favor, selecione um arquivo .txt', false);
 
             const reader = new FileReader();
             reader.onload = function (e) {
-                try {
-                    parseChecklist(e.target.result);
-                    showImportFeedback('Lista importada com sucesso!', true);
-                } catch (error) {
-                    showImportFeedback('Erro ao importar arquivo', false);
-                }
+                try { parseChecklist(e.target.result); showImportFeedback('Lista importada com sucesso!', true); }
+                catch (err) { showImportFeedback('Erro ao importar arquivo', false); }
                 importFileInput.value = '';
             };
             reader.readAsText(file);
@@ -522,134 +466,80 @@
         function parseChecklist(text) {
             const lines = text.split('\n');
             let newChecklistData = [];
-
             lines.forEach(line => {
                 line = line.trim();
                 if (!line) return;
-
-                if (line.startsWith('#')) {
-                    newChecklistData.push({
-                        type: 'category',
-                        text: line.substring(1).trim()
-                    });
-                } else if (line.startsWith('- []')) {
-                    newChecklistData.push({
-                        type: 'item',
-                        text: line.substring(4).trim(),
-                        checked: false
-                    });
-                } else if (line.startsWith('- [x]')) {
-                    newChecklistData.push({
-                        type: 'item',
-                        text: line.substring(5).trim(),
-                        checked: true
-                    });
-                } else if (line.startsWith('-')) {
-                    newChecklistData.push({
-                        type: 'subCategory',
-                        text: line.substring(1).trim()
-                    });
-                }
+                if (line.startsWith('#')) newChecklistData.push({ type: 'category', text: line.substring(1).trim() });
+                else if (line.startsWith('- [x]')) newChecklistData.push({ type: 'item', text: line.substring(5).trim(), checked: true });
+                else if (line.startsWith('- []')) newChecklistData.push({ type: 'item', text: line.substring(4).trim(), checked: false });
+                else if (line.startsWith('-')) newChecklistData.push({ type: 'subCategory', text: line.substring(1).trim() });
             });
-
             currentChecklistData = newChecklistData;
             renderChecklist();
         }
 
         function generateExportText() {
-            let text = '';
-
-            currentChecklistData.forEach(item => {
-                if (item.type === 'category') {
-                    text += `# ${item.text}\n`;
-                } else if (item.type === 'subCategory') {
-                    text += `- ${item.text}\n`;
-                } else if (item.type === 'item') {
-                    text += item.checked ? `- [x] ${item.text}\n` : `- [] ${item.text}\n`;
-                }
-            });
-
-            return text;
+            return currentChecklistData.map(item => {
+                if (item.type === 'category') return `# ${item.text}`;
+                if (item.type === 'subCategory') return `- ${item.text}`;
+                if (item.type === 'item') return item.checked ? `- [x] ${item.text}` : `- [] ${item.text}`;
+            }).join('\n');
         }
 
         function showExportModal() {
-            const exportContent = document.getElementById('exportContent');
-            exportContent.value = generateExportText();
+            document.getElementById('exportContent').value = generateExportText();
             document.getElementById('exportModal').classList.remove('hidden');
         }
-
-        function hideExportModal() {
-            document.getElementById('exportModal').classList.add('hidden');
-        }
+        function hideExportModal() { document.getElementById('exportModal').classList.add('hidden'); }
 
         function copyExportContent() {
             const exportContent = document.getElementById('exportContent');
             exportContent.select();
             navigator.clipboard.writeText(exportContent.value).then(() => {
-                const copyBtn = document.getElementById('copyBtn');
-                const originalText = copyBtn.textContent;
-                copyBtn.textContent = 'Copiado!';
-                copyBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
-                copyBtn.classList.add('bg-green-700');
-
+                const btn = document.getElementById('copyBtn');
+                const originalText = btn.textContent;
+                btn.textContent = 'Copiado!';
+                btn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                btn.classList.add('bg-green-700');
                 setTimeout(() => {
-                    copyBtn.textContent = originalText;
-                    copyBtn.classList.add('bg-green-500', 'hover:bg-green-600');
-                    copyBtn.classList.remove('bg-green-700');
+                    btn.textContent = originalText;
+                    btn.classList.add('bg-green-500', 'hover:bg-green-600');
+                    btn.classList.remove('bg-green-700');
                 }, 1500);
             });
         }
 
-        // Modais de confirmação e visualização
-        function confirmClearList() {
-            pendingAction = clearList;
-            document.getElementById('confirmMessage').textContent = 'Tem certeza que deseja limpar a lista?';
-            document.getElementById('confirmModal').classList.remove('hidden');
-        }
-
-        function executeConfirmed() {
-            if (pendingAction) {
-                pendingAction();
-                pendingAction = null;
-            }
-            hideConfirmModal();
-        }
-
-        function hideConfirmModal() {
-            document.getElementById('confirmModal').classList.add('hidden');
-        }
-
-        function clearList() {
-            currentChecklistData = [];
-            renderChecklist();
-        }
+        function confirmClearList() { pendingAction = clearList; document.getElementById('confirmMessage').textContent = 'Tem certeza que deseja limpar a lista?'; document.getElementById('confirmModal').classList.remove('hidden'); }
+        function executeConfirmed() { if (pendingAction) { pendingAction(); pendingAction = null; } hideConfirmModal(); }
+        function hideConfirmModal() { document.getElementById('confirmModal').classList.add('hidden'); }
+        function clearList() { currentChecklistData = []; renderChecklist(); }
 
         function showSelectedItems() {
             const selectedList = document.getElementById('selectedItemsList');
             selectedList.innerHTML = '';
-
-            const selectedItems = currentChecklistData.filter(item => item.type === 'item' && item.checked);
-
-            if (selectedItems.length === 0) {
-                selectedList.innerHTML = '<li class="text-gray-500 dark:text-gray-400 py-2">Nenhum item selecionado.</li>';
-            } else {
-                selectedItems.forEach(item => {
-                    const li = document.createElement('li');
-                    li.className = 'py-1 border-b border-gray-200 dark:border-gray-600 last:border-b-0';
-                    li.textContent = item.text;
-                    selectedList.appendChild(li);
-                });
-            }
-
+            const selectedItems = currentChecklistData.filter(i => i.type === 'item' && i.checked);
+            if (selectedItems.length === 0) selectedList.innerHTML = '<li class="text-gray-500 dark:text-gray-400 py-2">Nenhum item selecionado.</li>';
+            else selectedItems.forEach(i => { const li = document.createElement('li'); li.className = 'py-1 border-b border-gray-200 dark:border-gray-600 last:border-b-0'; li.textContent = i.text; selectedList.appendChild(li); });
             document.getElementById('selectedItemsModal').classList.remove('hidden');
         }
+        function hideSelectedItemsModal() { document.getElementById('selectedItemsModal').classList.add('hidden'); }
 
-        function hideSelectedItemsModal() {
-            document.getElementById('selectedItemsModal').classList.add('hidden');
+        // Drag & Drop usando Sortable.js
+        function enableDragDrop() {
+            Sortable.create(checklistContainer, {
+                animation: 150,
+                handle: '.cursor-pointer, .flex',
+                onEnd: function (evt) {
+                    const item = currentChecklistData.splice(evt.oldIndex, 1)[0];
+                    currentChecklistData.splice(evt.newIndex, 0, item);
+                    renderChecklist();
+                }
+            });
         }
 
         initChecklist();
     </script>
+
 </body>
 
 </html>
